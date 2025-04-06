@@ -1,0 +1,55 @@
+launch:
+- node_container:
+    pkg: rclcpp_components
+    exec: component_container
+    name: apriltag_container
+    namespace: ""
+    composable_node:
+    - pkg: usb_cam
+      plugin: usb_cam::UsbCamNode
+      name: usb_cam
+      namespace: camera
+      param:
+      - name: video_device
+        value: "/dev/video2"
+      - name: image_width
+        value: 640
+      - name: image_height
+        value: 480
+      - name: framerate
+        value: 30.0
+      - name: pixel_format
+        value: "yuyv"
+      - name: camera_info_url
+        value: "file://$(find-pkg-share apriltag_ros)/cfg/camera_info.yaml"
+      extra_arg:
+      - name: use_intra_process_comms
+        value: "True"
+
+    - pkg: image_proc
+      plugin: image_proc::RectifyNode
+      name: rectify
+      namespace: camera
+      remap:
+      - from: image
+        to: /camera/image_raw
+      - from: camera_info
+        to: /camera/camera_info
+      extra_arg:
+      - name: use_intra_process_comms
+        value: "True"
+
+    - pkg: apriltag_ros
+      plugin: AprilTagNode
+      name: apriltag
+      namespace: apriltag
+      remap:
+      - from: /apriltag/image_rect
+        to: /camera/image_rect
+      - from: /camera/camera_info
+        to: /camera/camera_info
+      param:
+      - from: $(find-pkg-share apriltag_ros)/cfg/tags_16h5.yaml
+      extra_arg:
+      - name: use_intra_process_comms
+        value: "True" 
